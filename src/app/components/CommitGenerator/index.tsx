@@ -1,6 +1,8 @@
 'use client';
 import { useState } from "react";
-import { Copy, Check, Loader2, GitCommit } from 'lucide-react';
+import { Copy, Check, Loader2, GitCommit, Clock, ChevronUp, ChevronDown } from 'lucide-react';
+import { getHistory, HistoryItem, saveHistory } from "@/utils/history";
+import { formatDate } from "@/utils/date";
 
 const commitTypes = [
   { label: 'Fix', value: 'fix' },
@@ -10,26 +12,34 @@ const commitTypes = [
 
 type CommitType = (typeof commitTypes)[number]['value'];
 
+const KEY = 'commitMessage';
+
 export default function CommitGenerator() {
-    const [description, setDescription] = useState('');
+    const [description, setDescription] = useState<string>('');
     const [type, setType] = useState<CommitType>('fix');
-    const [commitMessage, setCommitMessage] = useState('');
-    const [loading, setLoading] = useState(false);
-    const [copied, setCopied] = useState(false);
+    const [commitMessage, setCommitMessage] = useState<string>('');
+    const [loading, setLoading] = useState<boolean>(false);
+    const [copied, setCopied] = useState<boolean>(false);
+    const [histories, setHistories] = useState<HistoryItem[]>(getHistory(KEY))
+    const [showHistory, setShowHistory] = useState<boolean>(false);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
         setCommitMessage('');
+        const histories = getHistory(KEY);
+        const historyContext = histories.map(history => `ユーザーの入力： ${history.prompt}\nAIの出力： ${history.result}`).join('\n\n');
 
         try {
             const res = await fetch('/api/generate-commit', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ description, type }),
+                body: JSON.stringify({ description, type, historyContext }),
             });
             const data = await res.json();
             setCommitMessage(data.commitMessage || 'Error');
+            saveHistory(KEY, description, data.commitMessage, type)
+            setHistories(getHistory(KEY));
         } catch {
             setCommitMessage('Error');
         } finally {
@@ -115,6 +125,44 @@ export default function CommitGenerator() {
                             )}
                         </button>
                     </div>
+                </div>
+            )}
+
+            {histories.length > 0 && (
+                <div className="border-t border-gray-200 pt-4 mt-6">
+                    <button onClick={() => setShowHistory(!showHistory)} className="w-full flex items-center justify-between text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors">
+                        <div className="flex items-center gap-2">
+                            <Clock className="w-4 h-4" />
+                            <span>過去の履歴を見る ({histories.length}件)</span>
+                        </div>
+                        {showHistory ? (
+                            <ChevronUp className="w-4 h-4" />
+                        ) : (
+                            <ChevronDown className="w-4 h-4" />
+                        )}
+                    </button>
+
+                    {showHistory && (
+                        <div className="mt-4 space-y-3">
+                            {histories.map((history,index) => (
+                                <div key={index} className="bg-gray-50 rounded-lg p-4 border border-gray-200 hover:border-blue-300 transition-all">
+                                    <div className="flex items-start justify-between gap-3 mb-2">
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-xs text-gray-500 mb-1">
+                                                {formatDate(history.createdAt)}
+                                            </p>
+                                            <p className="text-sm text-gray-700 mb-1 truncate">
+                                                <span className="font-medium">プロンプト:</span> {history.prompt}
+                                            </p>
+                                            <code className="text-xs font-mono text-gray-800 bg-white px-2 py-1 rounded border border-gray-200 inline-block">
+                                                {history.type}:{history.result}
+                                            </code>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
             )}
         </div>
