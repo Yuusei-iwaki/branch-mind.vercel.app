@@ -34,7 +34,7 @@ export default function CommitGenerator() {
             const res = await fetch('/api/generate-commit', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ description, type }),
+                body: JSON.stringify({ description, type, historyContext }),
             });
             const data = await res.json();
             setCommitMessage(data.commitMessage || 'Error');

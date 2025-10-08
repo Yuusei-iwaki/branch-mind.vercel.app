@@ -24,6 +24,7 @@ export type HistoryItem = {
  * @param maxItems - 保存する履歴の最大件数（デフォルト10件）
  */
 export const saveHistory = (key: string, prompt: string, result: string, type: string, maxItems: number = 10) => {
+    if (typeof window === 'undefined') return; // サーバーサイドでは動作しないようにする
     const historyKey = `history_${key}`;
 
     // 既存履歴を取得（存在しない場合は空配列）
@@ -59,6 +60,7 @@ export const saveHistory = (key: string, prompt: string, result: string, type: s
  * @returns HistoryItem[] - 履歴アイテムの配列
  */
 export const getHistory = (key: string): HistoryItem[] => {
+    if (typeof window === 'undefined') return []; // サーバーサイドでは動作しないようにする
     const historyKey = `history_${key}`;
     return JSON.parse(localStorage.getItem(historyKey) || '[]');
 };
@@ -71,6 +73,7 @@ export const getHistory = (key: string): HistoryItem[] => {
  * @param key - 履歴の識別用キー
  */
 export const clearHistory = (key: string) => {
+    if (typeof window === 'undefined') return; // サーバーサイドでは動作しないようにする
     const historyKey = `history_${key}`;
     localStorage.removeItem(historyKey);
 };
