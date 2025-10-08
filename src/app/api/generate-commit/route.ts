@@ -7,26 +7,33 @@ const openai = new OpenAI({
 
 export async function POST(request: NextRequest) {
     const body = await request.json();
-    const { description } = body;
+    const { description, historyContext } = body;
 
     if (!description) {
         return NextResponse.json({ error: "Description is required" }, { status: 400 });
     }
 
     try {
+        // 履歴コンテキストをプロンプトに自然に組み込む
+        const prompt = `これまでの履歴を参考に、ユーザーの命名傾向を考慮してください。\n
+        ${historyContext ? `【過去の履歴】\n${historyContext}` : '（履歴なし）'}\n
+        【現在のタスク】\n
+        内容: ${description}\n
+        上記に基づいて、以下のルールでブランチ名を生成してください。\n\n
+        ルール:\n
+        - 日本語\n
+        - 20文字以内\n
+        - 出力はコミットメッセージのみ\n`;
         const response = await openai.chat.completions.create({
             model: "gpt-4.1-nano",
             messages: [
                 {
                     role: "system",
-                    content: `あなたはGitコミットメッセージ生成AIです。以下のルールに従って生成してください。
-                        - 日本語
-                        - 20文字以内
-                        - 出力はコミットメッセージのみ`,
+                    content: 'あなたはGitコミットメッセージを生成する専門AIです。命名規則の一貫性を重視してください。',
                 },
                 {
                     role: "user",
-                    content: `作業内容: ${description}`,
+                    content: prompt,
                 },
             ],
             max_tokens: 40,
