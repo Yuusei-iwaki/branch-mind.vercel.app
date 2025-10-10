@@ -1,3 +1,4 @@
+import { v4 as uuidv4 } from 'uuid';
 /**
  * 履歴アイテムの型定義。
  * prompt: ユーザーが入力した内容（例: "ログイン機能追加"）
@@ -5,6 +6,7 @@
  * createdAt: 生成日時（ISO形式の文字列）
  */
 export type HistoryItem = {
+    id: string;
     prompt: string;
     result: string;
     type: string;
@@ -37,6 +39,7 @@ export const saveHistory = (key: string, prompt: string, result: string, type: s
 
     // 新しい履歴を先頭に追加
     const newEntry: HistoryItem = {
+        id: uuidv4(),
         prompt,
         result,
         type,

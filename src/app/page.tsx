@@ -1,7 +1,7 @@
 // テストデプロイ
 import { GitBranch } from 'lucide-react';
-import BranchGenerator from './components/BranchGenerator'
-import CommitGenerator from './components/CommitGenerator'
+import BranchGenerator from '@/components/BranchGenerator';
+import CommitGenerator from '@/components/CommitGenerator';
 
 export default function Page() {
   return (
