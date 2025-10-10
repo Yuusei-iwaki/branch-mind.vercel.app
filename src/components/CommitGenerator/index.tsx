@@ -1,57 +1,66 @@
 'use client';
-import { useState } from "react";
-import { Copy, Check, Loader2, GitBranch, Clock, ChevronUp, ChevronDown } from 'lucide-react';
+import { useEffect, useState } from "react";
+import { Copy, Check, Loader2, GitCommit, ChevronUp, ChevronDown, CheckCircle2 } from 'lucide-react';
 import { getHistory, HistoryItem, saveHistory } from "@/utils/history";
 import { formatDate } from "@/utils/date";
 
-const branchTypes = [
-  { label: 'Feature', value: 'feature' },
+const commitTypes = [
+  { label: 'Fix', value: 'fix' },
   { label: 'Debug', value: 'debug' },
   { label: 'Add', value: 'add' },
 ] as const;
 
-type BranchType = (typeof branchTypes)[number]['value'];
+type CommitType = (typeof commitTypes)[number]['value'];
 
-const KEY = 'branchName';
+const KEY = 'commitMessage';
 
-export default function BranchGenerator() {
+export default function CommitGenerator() {
     const [description, setDescription] = useState<string>('');
-    const [type, setType] = useState<BranchType>('feature');
-    const [branchName, setBranchName] = useState<string>('');
+    const [type, setType] = useState<CommitType>('fix');
+    const [results, setResults] = useState<{id: number, name: string}[]>([]);
     const [loading, setLoading] = useState<boolean>(false);
     const [copied, setCopied] = useState<boolean>(false);
     const [histories, setHistories] = useState<HistoryItem[]>(getHistory(KEY))
     const [showHistory, setShowHistory] = useState<boolean>(false);
+    const [selectedResult, setSelectedResult] = useState<{id: number, name: string}>();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
-        setBranchName(''); 
-        const histories = getHistory(KEY);
-        const historyContext = histories.map(history => `ユーザーの入力： ${history.prompt}\nAIの出力： ${history.result}`).join('\n\n');
+        setResults([]);
+        const existingHistories = getHistory(KEY);
+        const historyContext = existingHistories.map(history => `ユーザーの入力： ${history.prompt}\nAIの出力： ${history.result}`).join('\n\n');
 
         try {
-            const response = await fetch('/api/generate-branch', {
+            const response = await fetch('/api/generate-commit', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ description, type, historyContext }),
             });
             const data = await response.json();
-            setBranchName(data.branchName || 'Error');
-            saveHistory(KEY, description, data.branchName, type)
-            setHistories(getHistory(KEY));
+            setResults(data.commitMessages);
         } catch (err) {
-            setBranchName('Error');
+            console.error(err);
+            setResults([]);
+            alert('コミットメッセージの生成に失敗しました。時間をおいて再試行してください。');
         } finally {
             setLoading(false);
         }
     };
 
-    const copyToClipboard = () => {
-        const fullBranchName = `${type}/${branchName}`;
-        navigator.clipboard.writeText(fullBranchName);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
+    useEffect(() => {
+            if (!copied) return;
+            const timer = setTimeout(() => setCopied(false), 2000);
+            return () => clearTimeout(timer);
+    }, [copied]);
+
+    const decideResult = () => {
+        if (selectedResult) {
+            saveHistory(KEY, description, selectedResult.name, type)
+            setHistories(getHistory(KEY));
+            navigator.clipboard.writeText(selectedResult.name);
+            setCopied(true);
+        }
     };
 
     return (
@@ -62,9 +71,9 @@ export default function BranchGenerator() {
                         作業内容
                     </label>
                     <textarea
-                        placeholder="例: AI を使ったブランチ名生成機能の追加"
+                        placeholder="例: API エンドポイントに認証機能を追加"
                         value={description}
-                        onChange={(e) => setDescription(e.target.value)}
+                        onChange={e => setDescription(e.target.value)}
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none"
                         rows={3}
                     />
@@ -76,10 +85,10 @@ export default function BranchGenerator() {
                     </label>
                     <select 
                         value={type} 
-                        onChange={(e) => setType(e.target.value as BranchType)}
+                        onChange={e => setType(e.target.value as CommitType)}
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                     >
-                        {branchTypes.map(type => (
+                        {commitTypes.map(type => (
                             <option key={type.value} value={type.value}>{type.label}</option>
                         ))}
                     </select>
@@ -93,53 +102,74 @@ export default function BranchGenerator() {
                     {loading ? (
                         <>
                             <Loader2 className="w-5 h-5 animate-spin" />
-                            生成中...
+                            AIがコミットメッセージを考えています...
                         </>
                     ) : (
                         <>
-                            <GitBranch className="w-5 h-5" />
-                            ブランチ名生成
+                            <GitCommit className="w-5 h-5" />
+                            コミットメッセージ生成
                         </>
                     )}
                 </button>
             </form>
 
-            {branchName && !loading && (
-                <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 mt-4">
-                    <div className="flex items-center justify-between gap-3">
-                        <div className="flex-1">
-                            <p className="text-xs text-gray-500 mb-1">生成されたブランチ名</p>
-                            <code className="font-mono text-sm text-gray-800 break-all">
-                                {type}/{branchName}
-                            </code>
-                        </div>
-                        <button
-                            onClick={copyToClipboard}
-                            className="flex-shrink-0 p-2 hover:bg-gray-200 rounded-lg transition-all"
-                            title="コピー"
+            {results.length > 0 && !loading && (
+                <div className="space-y-4 mt-4">
+                    <p className="text-sm font-medium text-gray-700">生成された候補（クリックして選択）</p>
+                    {results.map((result) => (
+                        <div
+                            key={result.id}
+                            onClick={() => setSelectedResult(result)}
+                            className={`relative bg-gray-50 rounded-lg p-4 border-2 transition-all cursor-pointer ${
+                                selectedResult?.id === result.id
+                                ? 'border-blue-500 bg-blue-50'
+                                : 'border-gray-200 hover:border-blue-300'
+                            }`}
                         >
-                            {copied ? (
-                                <Check className="w-5 h-5 text-green-500" />
-                            ) : (
-                                <Copy className="w-5 h-5 text-gray-600" />
-                            )}
+                            <div className="flex items-center justify-between gap-3">
+                                <div className="flex-1">
+                                    <code className="font-mono text-sm text-gray-800 break-all">
+                                        {result.name}
+                                    </code>
+                                </div>
+                                {selectedResult?.id === result.id && (
+                                    <CheckCircle2 className="w-5 h-5 text-blue-500 flex-shrink-0" />
+                                )}
+                            </div>
+                        </div>
+                    ))}
+                    {selectedResult && (
+                        <button
+                            onClick={decideResult}
+                            className="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3 px-6 rounded-lg transition-all flex items-center justify-center gap-2 shadow-sm"
+                        >
+                        {copied ? (
+                            <>
+                                <Check className="w-5 h-5" />
+                                    コピーしました！
+                            </>
+                        ) : (
+                            <>
+                                <Copy className="w-5 h-5" />
+                                    選択してコピー
+                            </>
+                        )}
                         </button>
-                    </div>
+                    )}
                 </div>
             )}
 
             {histories.length > 0 && (
                 <div className="border-t border-gray-200 pt-4 mt-6">
                     <button onClick={() => setShowHistory(!showHistory)} className="w-full flex items-center justify-between text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors">
-                        <div className="flex items-center gap-2">
-                            <Clock className="w-4 h-4" />
+                        <summary className="cursor-pointer flex items-center justify-between text-sm font-medium">
                             <span>過去の履歴を見る ({histories.length}件)</span>
-                        </div>
-                        {showHistory ? (
+                            {showHistory ? (
                             <ChevronUp className="w-4 h-4" />
                         ) : (
                             <ChevronDown className="w-4 h-4" />
                         )}
+                        </summary>
                     </button>
 
                     {showHistory && (
@@ -155,7 +185,7 @@ export default function BranchGenerator() {
                                                 <span className="font-medium">プロンプト:</span> {history.prompt}
                                             </p>
                                             <code className="text-xs font-mono text-gray-800 bg-white px-2 py-1 rounded border border-gray-200 inline-block">
-                                                {history.type}/{history.result}
+                                                {history.result}
                                             </code>
                                         </div>
                                     </div>

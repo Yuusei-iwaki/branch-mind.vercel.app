@@ -7,7 +7,7 @@ const openai = new OpenAI({
 
 export async function POST(request: NextRequest) {
     const body = await request.json();
-    const { description, historyContext } = body;
+    const { type, description, historyContext } = body;
 
     if (!description) {
         return NextResponse.json({ error: "Description is required" }, { status: 400 });
@@ -23,9 +23,12 @@ export async function POST(request: NextRequest) {
         ルール:\n
         - 日本語\n
         - 20文字以内\n
-        - 出力はコミットメッセージのみ\n`;
+        - 出力はコミットメッセージのみ\n;
+        - 先頭には必ず${type}:を付与する\n
+        - 各案は改行で区切って出力する`;
+        
         const response = await openai.chat.completions.create({
-            model: "gpt-4.1-nano",
+            model: "gpt-4.1-mini",
             messages: [
                 {
                     role: "system",
@@ -39,8 +42,23 @@ export async function POST(request: NextRequest) {
             max_tokens: 40,
         });
 
-        const commitMessage = response.choices[0].message.content?.trim() || `commit message`;
-        return NextResponse.json({ commitMessage });
+        // モデルが1つのmessage内で3案を返す想定
+        const content = response.choices[0].message?.content || '';
+        const names = content
+            .split('\n')
+            .map(line => line.trim())
+            .filter(line => line && !line.startsWith('-')); // 空行・説明文除去
+
+        // 重複を削除して、最大3件に絞る
+        const unique = Array.from(new Set(names)).slice(0, 3);
+
+        // オブジェクト配列化
+        const commitMessages = unique.map((name, index) => ({
+            id: index + 1,
+            name,
+        }));
+
+        return NextResponse.json({ commitMessages });
     } catch (error) {
         console.error(error);
         return NextResponse.json({ error: "Failed to generate commit message" }, { status: 500 });
