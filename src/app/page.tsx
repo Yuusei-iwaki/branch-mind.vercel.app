@@ -1,7 +1,8 @@
 // テストデプロイ
-import { GitBranch } from 'lucide-react';
+import { GitBranch, GitCommit, Variable } from 'lucide-react';
 import BranchGenerator from '@/components/BranchGenerator';
 import CommitGenerator from '@/components/CommitGenerator';
+import VariableGenerator from '@/components/VariableGenerator';
 
 export default function Page() {
   return (
@@ -34,14 +35,19 @@ export default function Page() {
         {/* コミットメッセージ生成 */}
         <section>
           <h2 className="text-2xl font-semibold text-gray-800 mb-4 flex items-center gap-2">
-            <svg className="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <circle cx="12" cy="12" r="3" />
-              <line x1="3" y1="12" x2="9" y2="12" />
-              <line x1="15" y1="12" x2="21" y2="12" />
-            </svg>
+            <GitCommit className="w-6 h-6 text-blue-500" />
             コミットメッセージ生成
           </h2>
           <CommitGenerator />
+        </section>
+
+        {/* 変数名生成 */}
+        <section>
+          <h2 className="text-2xl font-semibold text-gray-800 mb-4 flex items-center gap-2">
+            <Variable className="w-6 h-6 text-blue-500" />
+            変数名生成
+          </h2>
+          <VariableGenerator />
         </section>
       </main>
 
