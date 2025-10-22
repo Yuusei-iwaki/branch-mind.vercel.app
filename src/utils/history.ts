@@ -25,7 +25,7 @@ export type HistoryItem = {
  * @param result - AIが生成した出力結果
  * @param maxItems - 保存する履歴の最大件数（デフォルト10件）
  */
-export const saveHistory = (key: string, prompt: string, result: string, type: string, maxItems: number = 10) => {
+export const saveHistory = (key: string, prompt: string, result: string, type: string = '', maxItems: number = 10) => {
     if (typeof window === 'undefined') return; // サーバーサイドでは動作しないようにする
     const historyKey = `history_${key}`;
 

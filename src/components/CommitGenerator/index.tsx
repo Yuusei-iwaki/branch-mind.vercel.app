@@ -20,7 +20,7 @@ export default function CommitGenerator() {
     const [results, setResults] = useState<{id: number, name: string}[]>([]);
     const [loading, setLoading] = useState<boolean>(false);
     const [copied, setCopied] = useState<boolean>(false);
-    const [histories, setHistories] = useState<HistoryItem[]>(getHistory(KEY))
+    const [histories, setHistories] = useState<HistoryItem[]>([])
     const [showHistory, setShowHistory] = useState<boolean>(false);
     const [selectedResult, setSelectedResult] = useState<{id: number, name: string}>();
 
@@ -47,6 +47,10 @@ export default function CommitGenerator() {
             setLoading(false);
         }
     };
+
+    useEffect(() => {
+        setHistories(getHistory(KEY))
+    }, [])
 
     useEffect(() => {
             if (!copied) return;
