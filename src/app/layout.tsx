@@ -13,14 +13,14 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "AI Git Name Generator",
-  description: "AIでブランチ名とコミットメッセージを簡単生成",
+  title: "AI Name Lab",
+  description: "Gitやコードの命名作業をAIで効率化",
   icons: {
     icon: "/favicon.png",
   },
   openGraph: {
-    title: "AI Git Name Generator",
-    description: "AIでブランチ名とコミットメッセージを簡単生成",
+    title: "AI Name Lab",
+    description: "Gitやコードの命名作業をAIで効率化",
     url: "https://ai-git-name-generator.vercel.app/",
     siteName: "AI Git Name Generator",
     images: [
@@ -28,7 +28,7 @@ export const metadata: Metadata = {
         url: "https://ai-git-name-generator.vercel.app/favicon.png",
         width: 1200,
         height: 630,
-        alt: "AI Git Name Generator",
+        alt: "AI Name Lab",
       },
     ],
     locale: "ja_JP",
@@ -36,8 +36,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "AI Git Name Generator",
-    description: "AIでブランチ名とコミットメッセージを簡単生成",
+    title: "AI Name Lab",
+    description: "Gitやコードの命名作業をAIで効率化",
     images: ["https://ai-git-name-generator.vercel.app/favicon.png"],
   }
 };
